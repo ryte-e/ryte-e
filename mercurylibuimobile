@@ -2,14 +2,13 @@
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
 local UserInputService = game:GetService("UserInputService")
+-- Mobile detection
+local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
+
 local Players = game:GetService("Players")
 local LocalPlayer = Players.LocalPlayer
 local Mouse = LocalPlayer:GetMouse()
 local HTTPService = game:GetService("HttpService")
--- Device check
-local UserInputService = game:GetService("UserInputService")
-local isMobile = UserInputService.TouchEnabled and not UserInputService.KeyboardEnabled
-
 
 local Library = {
 	Themes = {
@@ -115,6 +114,22 @@ function Library:change_theme(toTheme)
 			element:tween{[property] = modifiedColor}
 		end
 	end
+end
+
+
+-- Override object method for responsive sizing
+local orig_object = Library.object
+function Library:object(class, properties)
+    properties = properties or {}
+    -- Responsive size tweak: convert fixed offsets to scale on mobile
+    if isMobile and properties.Size and typeof(properties.Size) == "UDim2" then
+        local sX, oX, sY, oY = properties.Size.X.Scale, properties.Size.X.Offset, properties.Size.Y.Scale, properties.Size.Y.Offset
+        -- If using offset, convert to scale relative to screen (assuming 1080p baseline)
+        if oX ~= 0 then properties.Size = UDim2.new(oX/1080, 0, properties.Size.Y.Scale, properties.Size.Y.Offset) end
+        if oY ~= 0 then properties.Size = UDim2.new(properties.Size.X.Scale, properties.Size.X.Offset, oY/1920, 0) end
+    end
+    local obj = orig_object(self, properties)
+    return obj
 end
 
 function Library:object(class, properties)
